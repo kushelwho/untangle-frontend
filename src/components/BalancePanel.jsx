@@ -22,6 +22,14 @@ export default function BalancePanel({ balanceData }) {
     return '₹0.00 (settled)';
   }
 
+  // Only display pairwise debts between members who still have an active net balance (ignoring settled circular loops)
+  const activePairwiseBalances = pairwiseBalances.filter((pw) => {
+    const borrower = memberBalances.find((m) => m.userId === pw.borrowerId);
+    const payer = memberBalances.find((m) => m.userId === pw.payerId);
+    if (!borrower || !payer) return true;
+    return Math.abs(parseFloat(borrower.netBalance)) >= 0.01 && Math.abs(parseFloat(payer.netBalance)) >= 0.01;
+  });
+
   return (
     <div className="card fade-in">
       <div className="card-title" style={{ marginBottom: 20 }}>Group Balances</div>
@@ -41,10 +49,10 @@ export default function BalancePanel({ balanceData }) {
         ))}
       </div>
 
-      {pairwiseBalances.length > 0 && (
+      {activePairwiseBalances.length > 0 && (
         <div className="balance-section">
           <div className="balance-section-title">Who Owes Whom</div>
-          {pairwiseBalances.map((pw, i) => (
+          {activePairwiseBalances.map((pw, i) => (
             <div className="pairwise-row" key={i}>
               <strong>{pw.borrowerName}</strong> owes <strong>{pw.payerName}</strong>{' '}
               <span className="pairwise-amount">{formatAmount(pw.amount)}</span>

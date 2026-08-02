@@ -27,29 +27,24 @@ export default function Dashboard() {
   async function loadData() {
     setLoading(true);
     try {
-      // Load saved group IDs from localStorage
-      const savedIds = JSON.parse(localStorage.getItem('untangle_groups') || '[]');
-      const groupPromises = savedIds.map((id) =>
-        groups.get(id).catch(() => null)
-      );
-      const results = await Promise.all(groupPromises);
-      setMyGroups(results.filter(Boolean));
-
-      // Load user balance
+      // Fetch user balances — this returns all groups the user is a member of
       const bal = await balances.me().catch(() => null);
       setMyBalance(bal);
+
+      if (bal && bal.groupBalances && bal.groupBalances.length > 0) {
+        // Fetch full group details for each group the user belongs to
+        const groupPromises = bal.groupBalances.map((gb) =>
+          groups.get(gb.groupId).catch(() => null)
+        );
+        const results = await Promise.all(groupPromises);
+        setMyGroups(results.filter(Boolean));
+      } else {
+        setMyGroups([]);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
-    }
-  }
-
-  function saveGroupId(id) {
-    const saved = JSON.parse(localStorage.getItem('untangle_groups') || '[]');
-    if (!saved.includes(id)) {
-      saved.push(id);
-      localStorage.setItem('untangle_groups', JSON.stringify(saved));
     }
   }
 
@@ -59,10 +54,10 @@ export default function Dashboard() {
     setCreateLoading(true);
     try {
       const group = await groups.create({ name: newGroupName });
-      saveGroupId(group.id);
       setNewGroupName('');
       setShowCreateModal(false);
-      setMyGroups([...myGroups, group]);
+      // Reload everything so the new group shows up
+      await loadData();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -76,12 +71,10 @@ export default function Dashboard() {
     setJoinLoading(true);
     try {
       const group = await groups.get(joinGroupId.trim());
-      saveGroupId(group.id);
       setJoinGroupId('');
       setShowJoinModal(false);
-      if (!myGroups.find((g) => g.id === group.id)) {
-        setMyGroups([...myGroups, group]);
-      }
+      // Navigate directly to the group
+      navigate(`/groups/${group.id}`);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -99,6 +92,12 @@ export default function Dashboard() {
     if (num > 0) return 'positive';
     if (num < 0) return 'negative';
     return 'neutral';
+  }
+
+  function getGroupNetBalance(groupId) {
+    if (!myBalance || !myBalance.groupBalances) return null;
+    const gb = myBalance.groupBalances.find((g) => g.groupId === groupId);
+    return gb ? gb.netBalanceInGroup : null;
   }
 
   if (loading) {
@@ -160,21 +159,33 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="groups-grid">
-          {myGroups.map((g) => (
-            <div
-              key={g.id}
-              className="card card-hover group-card"
-              onClick={() => navigate(`/groups/${g.id}`)}
-            >
-              <div className="group-card-name">{g.name}</div>
-              <div className="group-card-meta">
-                {g.members?.length || 0} member{(g.members?.length || 0) !== 1 ? 's' : ''}
+          {myGroups.map((g) => {
+            const netBal = getGroupNetBalance(g.id);
+            return (
+              <div
+                key={g.id}
+                className="card card-hover group-card"
+                onClick={() => navigate(`/groups/${g.id}`)}
+              >
+                <div className="group-card-name">{g.name}</div>
+                <div className="group-card-meta">
+                  {g.members?.length || 0} member{(g.members?.length || 0) !== 1 ? 's' : ''}
+                </div>
+                {netBal !== null && (
+                  <div className={`group-card-balance ${balanceClass(netBal)}`}>
+                    {parseFloat(netBal) > 0
+                      ? `you get back ${formatAmount(netBal)}`
+                      : parseFloat(netBal) < 0
+                        ? `you owe ${formatAmount(netBal)}`
+                        : 'settled up ✓'}
+                  </div>
+                )}
+                <div className="group-card-meta" style={{ fontSize: '0.7rem', marginTop: 4, opacity: 0.6 }}>
+                  {g.id}
+                </div>
               </div>
-              <div className="group-card-meta" style={{ fontSize: '0.7rem', marginTop: 4, opacity: 0.6 }}>
-                {g.id}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

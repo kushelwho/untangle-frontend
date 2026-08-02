@@ -5,6 +5,9 @@ import Modal from '../components/Modal';
 import ExpenseList from '../components/ExpenseList';
 import AddExpenseForm from '../components/AddExpenseForm';
 import BalancePanel from '../components/BalancePanel';
+import SettlementPlan from '../components/SettlementPlan';
+import SettleUpForm from '../components/SettleUpForm';
+import SettlementHistory from '../components/SettlementHistory';
 
 export default function GroupDetail() {
   const { groupId } = useParams();
@@ -18,10 +21,14 @@ export default function GroupDetail() {
 
   const [showAddMember, setShowAddMember] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [showSettleUp, setShowSettleUp] = useState(false);
   const [memberUserId, setMemberUserId] = useState('');
   const [addMemberLoading, setAddMemberLoading] = useState(false);
   const [addMemberError, setAddMemberError] = useState('');
   const [addMemberSuccess, setAddMemberSuccess] = useState('');
+
+  // Key to force re-mount of child components when data changes
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const loadAll = useCallback(async () => {
     try {
@@ -50,10 +57,11 @@ export default function GroupDetail() {
     setAddMemberSuccess('');
     setAddMemberLoading(true);
     try {
-      await groups.addMember(groupId, { userId: memberUserId.trim() });
+      const val = memberUserId.trim();
+      const payload = val.includes('@') ? { email: val } : { userId: val, email: val };
+      await groups.addMember(groupId, payload);
       setAddMemberSuccess('Member added!');
       setMemberUserId('');
-      // Refresh group data to show new member
       const g = await groups.get(groupId);
       setGroup(g);
     } catch (err) {
@@ -63,13 +71,22 @@ export default function GroupDetail() {
     }
   }
 
+  function refreshAll() {
+    loadAll();
+    setRefreshKey((k) => k + 1);
+  }
+
   function handleExpenseCreated() {
     setShowAddExpense(false);
-    loadAll();
+    refreshAll();
   }
 
   function handleExpenseDeleted() {
-    loadAll();
+    refreshAll();
+  }
+
+  function handleSettled() {
+    refreshAll();
   }
 
   if (loading) {
@@ -108,10 +125,13 @@ export default function GroupDetail() {
         </div>
         <div className="group-detail-actions">
           <button className="btn btn-secondary" onClick={() => { setAddMemberError(''); setAddMemberSuccess(''); setShowAddMember(true); }}>
-            + Add Member
+            + Member
+          </button>
+          <button className="btn btn-secondary" onClick={() => setShowSettleUp(true)}>
+            💸 Settle Up
           </button>
           <button className="btn btn-primary" onClick={() => setShowAddExpense(true)}>
-            + Add Expense
+            + Expense
           </button>
         </div>
       </div>
@@ -130,10 +150,10 @@ export default function GroupDetail() {
         )}
       </div>
 
-      {/* Two-column layout: Expenses + Balances */}
+      {/* Two-column layout: Expenses + History | Balances + Settlement Plan */}
       <div className="detail-grid">
-        {/* Left: Expenses */}
-        <div>
+        {/* Left: Expenses + Settlement History */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div className="card">
             <div className="card-header">
               <span className="card-title">Expenses</span>
@@ -148,11 +168,14 @@ export default function GroupDetail() {
               onDeleted={handleExpenseDeleted}
             />
           </div>
+
+          <SettlementHistory groupId={groupId} refreshKey={refreshKey} />
         </div>
 
-        {/* Right: Balances */}
-        <div>
+        {/* Right: Balances + Settlement Plan */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <BalancePanel balanceData={balanceData} />
+          <SettlementPlan key={refreshKey} groupId={groupId} members={members} />
         </div>
       </div>
 
@@ -161,10 +184,11 @@ export default function GroupDetail() {
         <Modal title="Add Member" onClose={() => setShowAddMember(false)}>
           <form className="auth-form" onSubmit={handleAddMember}>
             <div className="input-group">
-              <label>User UUID</label>
+              <label>User Email (or UUID)</label>
               <input
                 className="input"
-                placeholder="Paste the user's UUID"
+                type="text"
+                placeholder="Enter user's email address (e.g. alice@example.com)"
                 value={memberUserId}
                 onChange={(e) => setMemberUserId(e.target.value)}
                 required
@@ -187,6 +211,17 @@ export default function GroupDetail() {
             groupId={groupId}
             members={members}
             onCreated={handleExpenseCreated}
+          />
+        </Modal>
+      )}
+
+      {/* Settle Up Modal */}
+      {showSettleUp && (
+        <Modal title="Settle Up" onClose={() => setShowSettleUp(false)}>
+          <SettleUpForm
+            groupId={groupId}
+            members={members}
+            onSettled={handleSettled}
           />
         </Modal>
       )}

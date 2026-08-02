@@ -470,6 +470,16 @@ select.input {
   color: var(--text-muted);
 }
 
+.group-card-balance {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.group-card-balance.positive { color: var(--positive); }
+.group-card-balance.negative { color: var(--negative); }
+.group-card-balance.neutral { color: var(--text-muted); }
+
 .empty-state {
   text-align: center;
   padding: 60px 20px;
@@ -702,6 +712,118 @@ select.input {
 .pairwise-amount {
   color: var(--warning);
   font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SETTLEMENT PLAN
+   ═══════════════════════════════════════════════════════════ */
+.settlement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settlement-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+
+.settlement-item:hover {
+  background: var(--bg-input);
+  border-color: var(--border-medium);
+}
+
+.settlement-flow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settlement-user {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.settlement-user.from {
+  color: var(--negative);
+}
+
+.settlement-user.to {
+  color: var(--positive);
+}
+
+.settlement-arrow {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.settlement-amount {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--warning);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SETTLEMENT HISTORY
+   ═══════════════════════════════════════════════════════════ */
+.settlement-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settlement-history-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+
+.settlement-history-item:hover {
+  background: var(--bg-input);
+  border-color: var(--border-medium);
+}
+
+.settlement-history-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.settlement-history-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.settlement-history-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.settlement-history-desc strong {
+  color: var(--text-primary);
+}
+
+.settlement-history-date {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.settlement-history-amount {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--positive);
+  white-space: nowrap;
 }
 
 /* ═══════════════════════════════════════════════════════════

@@ -47,7 +47,10 @@ export const groups = {
 
 // ─── Expenses ────────────────────────────────────────────
 export const expenses = {
-  create: (groupId, body) => request(`/groups/${groupId}/expenses`, { method: 'POST', body: JSON.stringify(body) }),
+  create: (groupId, body) => {
+    const headers = { 'Idempotency-Key': crypto.randomUUID() };
+    return request(`/groups/${groupId}/expenses`, { method: 'POST', body: JSON.stringify(body), headers });
+  },
   list: (groupId) => request(`/groups/${groupId}/expenses`),
   delete: (groupId, expenseId) => request(`/groups/${groupId}/expenses/${expenseId}`, { method: 'DELETE' }),
 };
@@ -56,4 +59,21 @@ export const expenses = {
 export const balances = {
   group: (groupId) => request(`/groups/${groupId}/balances`),
   me: () => request('/users/me/balances'),
+};
+
+// ─── Settlements ─────────────────────────────────────────
+export const settlements = {
+  settleUp: (groupId, body, idempotencyKey) => {
+    const headers = {};
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+    return request(`/groups/${groupId}/settle`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers,
+    });
+  },
+  plan: (groupId) => request(`/groups/${groupId}/settlement-plan`),
+  history: (groupId) => request(`/groups/${groupId}/settlements`),
 };
